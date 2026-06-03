@@ -78,9 +78,12 @@ namespace DeliveryFood.API.Controllers
                     r.DeliveryTimeMax,
                     r.Cuisine,
                     r.Category,
-                    r.HasPromo
+                    r.Category2,
+                    r.Category3,
+                    HasPromo = _db.RestaurantPromos.Any(p => p.RestaurantId == r.Id && p.IsActive)
                 })
                 .ToListAsync();
+
             return Ok(restaurants);
         }
 
@@ -100,13 +103,25 @@ namespace DeliveryFood.API.Controllers
                 Category = body.TryGetProperty("category", out var cat) ? cat.GetString()! : string.Empty,
                 Category2 = body.TryGetProperty("category2", out var c2) && c2.ValueKind != JsonValueKind.Null ? c2.GetString() : null,
                 Category3 = body.TryGetProperty("category3", out var c3) && c3.ValueKind != JsonValueKind.Null ? c3.GetString() : null,
-                HasPromo = body.TryGetProperty("hasPromo", out var promo) && promo.GetBoolean(),
                 MenuItems = new List<MenuItem>()
             };
 
             _db.Restaurants.Add(restaurant);
             await _db.SaveChangesAsync();
-            return Ok(restaurant);
+            return Ok(new
+            {
+                id = restaurant.Id,
+                name = restaurant.Name,
+                imageUrl = restaurant.ImageUrl,
+                rating = restaurant.Rating,
+                deliveryTimeMin = restaurant.DeliveryTimeMin,
+                deliveryTimeMax = restaurant.DeliveryTimeMax,
+                cuisine = restaurant.Cuisine,
+                category = restaurant.Category,
+                category2 = restaurant.Category2,
+                category3 = restaurant.Category3,
+                hasPromo = false
+            });
         }
 
         [HttpDelete("restaurants/{id}")]
@@ -125,15 +140,42 @@ namespace DeliveryFood.API.Controllers
         {
             var items = await _db.MenuItems
                 .Where(m => m.RestaurantId == restaurantId)
+                .Select(m => new
+                {
+                    id = m.Id,
+                    name = m.Name,
+                    description = m.Description,
+                    price = m.Price,
+                    imageUrl = m.ImageUrl,
+                    category = m.Category,
+                    isAvailable = m.IsAvailable,
+                    restaurantId = m.RestaurantId
+                })
                 .ToListAsync();
+
             return Ok(items);
         }
 
         [HttpGet("menu/{id}")]
         public async Task<IActionResult> GetMenuItem(int id)
         {
-            var item = await _db.MenuItems.FindAsync(id);
+            var item = await _db.MenuItems
+                .Where(m => m.Id == id)
+                .Select(m => new
+                {
+                    id = m.Id,
+                    name = m.Name,
+                    description = m.Description,
+                    price = m.Price,
+                    imageUrl = m.ImageUrl,
+                    category = m.Category,
+                    isAvailable = m.IsAvailable,
+                    restaurantId = m.RestaurantId
+                })
+                .FirstOrDefaultAsync();
+
             if (item == null) return NotFound();
+
             return Ok(item);
         }
 
@@ -158,7 +200,18 @@ namespace DeliveryFood.API.Controllers
 
             _db.MenuItems.Add(menuItem);
             await _db.SaveChangesAsync();
-            return Ok(menuItem);
+
+            return Ok(new
+            {
+                id = menuItem.Id,
+                name = menuItem.Name,
+                description = menuItem.Description,
+                price = menuItem.Price,
+                imageUrl = menuItem.ImageUrl,
+                category = menuItem.Category,
+                isAvailable = menuItem.IsAvailable,
+                restaurantId = menuItem.RestaurantId
+            });
         }
 
         [HttpPut("menu/{id}")]
@@ -172,10 +225,20 @@ namespace DeliveryFood.API.Controllers
             if (body.TryGetProperty("price", out var price)) item.Price = (decimal)price.GetDouble();
             if (body.TryGetProperty("imageUrl", out var img)) item.ImageUrl = img.GetString()!;
             if (body.TryGetProperty("category", out var cat)) item.Category = cat.GetString()!;
-            if (body.TryGetProperty("isAvailable", out var avail)) item.IsAvailable = avail.GetBoolean();
+            item.IsAvailable = true;
 
             await _db.SaveChangesAsync();
-            return Ok(item);
+            return Ok(new
+            {
+                id = item.Id,
+                name = item.Name,
+                description = item.Description,
+                price = item.Price,
+                imageUrl = item.ImageUrl,
+                category = item.Category,
+                isAvailable = item.IsAvailable,
+                restaurantId = item.RestaurantId
+            });
         }
 
         [HttpDelete("menu/{id}")]
@@ -203,10 +266,26 @@ namespace DeliveryFood.API.Controllers
             if (body.TryGetProperty("category", out var category)) restaurant.Category = category.GetString()!;
             if (body.TryGetProperty("category2", out var cat2)) restaurant.Category2 = cat2.ValueKind != JsonValueKind.Null ? cat2.GetString() : null;
             if (body.TryGetProperty("category3", out var cat3)) restaurant.Category3 = cat3.ValueKind != JsonValueKind.Null ? cat3.GetString() : null;
-            if (body.TryGetProperty("hasPromo", out var hasPromo)) restaurant.HasPromo = hasPromo.GetBoolean();
 
             await _db.SaveChangesAsync();
-            return Ok(restaurant);
+
+            var hasActivePromo = await _db.RestaurantPromos
+                .AnyAsync(p => p.RestaurantId == restaurant.Id && p.IsActive);
+
+            return Ok(new
+            {
+                id = restaurant.Id,
+                name = restaurant.Name,
+                imageUrl = restaurant.ImageUrl,
+                rating = restaurant.Rating,
+                deliveryTimeMin = restaurant.DeliveryTimeMin,
+                deliveryTimeMax = restaurant.DeliveryTimeMax,
+                cuisine = restaurant.Cuisine,
+                category = restaurant.Category,
+                category2 = restaurant.Category2,
+                category3 = restaurant.Category3,
+                hasPromo = hasActivePromo
+            });
         }
 
 

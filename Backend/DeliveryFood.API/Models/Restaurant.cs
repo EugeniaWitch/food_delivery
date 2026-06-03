@@ -10,8 +10,8 @@ namespace DeliveryFood.API.Models
         public int DeliveryTimeMax { get; set; }
         public string Cuisine { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
-        public string? Category2 { get; set; }
-        public string? Category3 { get; set; }
+        public string? Category2 { get; set; } = null;
+        public string? Category3 { get; set; } = null;
         public bool HasPromo { get; set; } = false;
 
         public ICollection<MenuItem> MenuItems { get; set; } = new List<MenuItem>();

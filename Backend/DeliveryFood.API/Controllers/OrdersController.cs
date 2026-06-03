@@ -22,8 +22,8 @@ namespace DeliveryFood.API.Controllers
 
         // Создать заказ (нажатие кнопки Оплатить)
         [HttpPost]
-    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
-    {
+        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
+        {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var total = dto.Items.Sum(i => i.Price * i.Quantity);
         var orderItems = dto.Items.Select(i => new OrderItem

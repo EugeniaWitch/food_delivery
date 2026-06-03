@@ -17,89 +17,126 @@ namespace DeliveryFood.API.Controllers
 
         // Все рестораны с фильтрацией
         [HttpGet]
-public async Task<IActionResult> GetAll(
-    [FromQuery] string? cuisine,
-    [FromQuery] string? category,
-    [FromQuery] bool? hasPromo,
-    [FromQuery] bool? highRating,
-    [FromQuery] string? search)
-{
-    var allRestaurants = await _db.Restaurants.ToListAsync();
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? cuisine,
+            [FromQuery] string? category,
+            [FromQuery] bool? hasPromo,
+            [FromQuery] bool? highRating,
+            [FromQuery] string? search)
+        {
+            var restaurantsFromDb = await _db.Restaurants
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.ImageUrl,
+                    r.Rating,
+                    r.DeliveryTimeMin,
+                    r.DeliveryTimeMax,
+                    r.Cuisine,
+                    r.Category,
+                    r.Category2,
+                    r.Category3,
+                    HasPromo = _db.RestaurantPromos.Any(p => p.RestaurantId == r.Id && p.IsActive)
+                })
+                .ToListAsync();
 
-    var query = allRestaurants.AsQueryable();
+            var restaurants = restaurantsFromDb.AsEnumerable();
 
-    if (!string.IsNullOrEmpty(cuisine))
-        query = query.Where(r => r.Cuisine.ToLower().Contains(cuisine.ToLower()));
+            if (!string.IsNullOrWhiteSpace(cuisine))
+            {
+                var cuisineValue = cuisine.Trim().ToLower();
 
-    if (!string.IsNullOrEmpty(category))
-        query = query.Where(r => r.Category.ToLower().Contains(category.ToLower()));
+                restaurants = restaurants.Where(r =>
+                    !string.IsNullOrWhiteSpace(r.Cuisine) &&
+                    r.Cuisine.Trim().ToLower() == cuisineValue
+                );
+            }
 
-    if (hasPromo == true)
-        query = query.Where(r => r.HasPromo);
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                var categoryValue = category.Trim().ToLower();
 
-    if (highRating == true)
-        query = query.Where(r => r.Rating >= 4.5);
+                restaurants = restaurants.Where(r =>
+                    (!string.IsNullOrWhiteSpace(r.Category) &&
+                    r.Category.Trim().ToLower() == categoryValue) ||
 
-    if (!string.IsNullOrEmpty(search))
-        query = query.Where(r => r.Name.ToLower().Contains(search.ToLower()));
+                    (!string.IsNullOrWhiteSpace(r.Category2) &&
+                    r.Category2.Trim().ToLower() == categoryValue) ||
 
-    var restaurants = query.Select(r => new
-    {
-        r.Id,
-        r.Name,
-        r.ImageUrl,
-        r.Rating,
-        r.DeliveryTimeMin,
-        r.DeliveryTimeMax,
-        r.Cuisine,
-        r.Category,
-        r.HasPromo
-    }).ToList();
+                    (!string.IsNullOrWhiteSpace(r.Category3) &&
+                    r.Category3.Trim().ToLower() == categoryValue)
+                );
+            }
 
-    return Ok(restaurants);
-}
+            if (hasPromo == true)
+            {
+                restaurants = restaurants.Where(r => r.HasPromo);
+            }
+
+            if (highRating == true)
+            {
+                restaurants = restaurants.Where(r => r.Rating >= 4.5);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchValue = search.Trim().ToLower();
+
+                restaurants = restaurants.Where(r =>
+                    !string.IsNullOrWhiteSpace(r.Name) &&
+                    r.Name.Trim().ToLower().Contains(searchValue)
+                );
+            }
+
+            return Ok(restaurants.ToList());
+        }
 
         // Один ресторан по id
         [HttpGet("{id}")]
-public async Task<IActionResult> GetById(int id)
-{
-    try
-    {
-        var restaurant = await _db.Restaurants
-            .Include(r => r.MenuItems.Where(m => m.IsAvailable))
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        if (restaurant == null)
-            return NotFound(new { message = "Ресторан не найден" });
-
-        return Ok(new
+        public async Task<IActionResult> GetById(int id)
         {
-            restaurant.Id,
-            restaurant.Name,
-            restaurant.ImageUrl,
-            restaurant.Rating,
-            restaurant.DeliveryTimeMin,
-            restaurant.DeliveryTimeMax,
-            restaurant.Cuisine,
-            restaurant.Category,
-            restaurant.HasPromo,
-            menuItems = restaurant.MenuItems.Select(m => new
+            try
             {
-                m.Id,
-                m.Name,
-                m.Description,
-                m.Price,
-                m.ImageUrl,
-                m.Category,
-                m.IsAvailable,
-                m.RestaurantId
-            })
-        });
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new { message = ex.Message });
-    }
-}
+                var restaurant = await _db.Restaurants
+                    .Include(r => r.MenuItems.Where(m => m.IsAvailable))
+                    .FirstOrDefaultAsync(r => r.Id == id);
+
+                if (restaurant == null)
+                    return NotFound(new { message = "Ресторан не найден" });
+
+                var hasActivePromo = await _db.RestaurantPromos
+                    .AnyAsync(p => p.RestaurantId == restaurant.Id && p.IsActive);
+
+                return Ok(new
+                {
+                    restaurant.Id,
+                    restaurant.Name,
+                    restaurant.ImageUrl,
+                    restaurant.Rating,
+                    restaurant.DeliveryTimeMin,
+                    restaurant.DeliveryTimeMax,
+                    restaurant.Cuisine,
+                    restaurant.Category,
+                    restaurant.Category2,
+                    restaurant.Category3,
+                    HasPromo = hasActivePromo,
+                    menuItems = restaurant.MenuItems.Select(m => new
+                    {
+                        m.Id,
+                        m.Name,
+                        m.Description,
+                        m.Price,
+                        m.ImageUrl,
+                        m.Category,
+                        m.IsAvailable,
+                        m.RestaurantId
+                    })
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }}
     }
 }
