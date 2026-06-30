@@ -19,6 +19,7 @@ namespace DeliveryFood.API.Data
                     DeliveryTimeMax = 35,
                     Cuisine = "Американская",
                     Category = "Бургеры",
+                    Category2 = "Фастфуд",
                     HasPromo = true,
                     MenuItems = new List<MenuItem>
                     {
@@ -38,6 +39,8 @@ namespace DeliveryFood.API.Data
                     DeliveryTimeMax = 50,
                     Cuisine = "Японская",
                     Category = "Суши",
+                    Category2 = "Вок",
+                    Category3 = "Роллы",
                     HasPromo = false,
                     MenuItems = new List<MenuItem>
                     {
@@ -57,6 +60,8 @@ namespace DeliveryFood.API.Data
                     DeliveryTimeMax = 40,
                     Cuisine = "Итальянская",
                     Category = "Пицца",
+                    Category2 = "Паста",
+                    Category3 = "Десерты",
                     HasPromo = true,
                     MenuItems = new List<MenuItem>
                     {
@@ -76,6 +81,7 @@ namespace DeliveryFood.API.Data
                     DeliveryTimeMax = 25,
                     Cuisine = "Восточная",
                     Category = "Шаурма",
+                    Category2 = "Шашлык",
                     HasPromo = false,
                     MenuItems = new List<MenuItem>
                     {
@@ -95,6 +101,8 @@ namespace DeliveryFood.API.Data
                     DeliveryTimeMax = 45,
                     Cuisine = "Русская",
                     Category = "Супы",
+                    Category2 = "Салаты",
+                    Category3 = "Завтраки",
                     HasPromo = true,
                     MenuItems = new List<MenuItem>
                     {

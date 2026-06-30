@@ -22,6 +22,8 @@ export default function HomePage() {
   const { user } = useAuth();
   const restaurantsSectionRef = useRef<HTMLDivElement | null>(null);
 
+  const [totalMenuPrice, setTotalMenuPrice] = useState<number>(0);
+
   const fetchRestaurants = async () => {
     setLoading(true);
 
@@ -34,7 +36,8 @@ export default function HomePage() {
         highRating: highRating || undefined,
       });
 
-      setRestaurants(res.data);
+      setRestaurants(res.data.restaurants ?? []);
+      setTotalMenuPrice(res.data.totalMenuPrice ?? 0);
     } catch {
       console.error('Ошибка загрузки ресторанов');
     } finally {
@@ -85,6 +88,8 @@ export default function HomePage() {
           <div className="text-8xl">🍔</div>
         </div>
       </div>
+
+      
 
       <div ref={restaurantsSectionRef} className="max-w-7xl mx-auto px-4 py-8 scroll-mt-4">
 
